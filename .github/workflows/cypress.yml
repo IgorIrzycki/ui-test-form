@@ -1,0 +1,61 @@
+name: Cypress E2E Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Pobranie kodu
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Instalacja Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 3️⃣ Instalacja zależności
+      - name: Install dependencies
+        run: npm install
+
+      # 4️⃣ Uruchomienie aplikacji React (w tle)
+      - name: Start React app
+        run: npm start &
+      
+      # 5️⃣ Oczekiwanie na gotowość serwera
+      - name: Wait for React to be ready
+        run: npx wait-on http://localhost:3000
+
+      # 6️⃣ Uruchomienie testów Cypress
+      - name: Run Cypress tests
+        run: npx cypress run --browser chrome
+
+      # 7️⃣ (Opcjonalnie) Zapisanie wyników testów jako artefakt
+      - name: Upload test videos and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-artifacts
+          path: |
+            cypress/videos/
+            cypress/screenshots/
+      
+            - name: Generate HTML report
+        if: always()
+        run: |
+          npx mochawesome-merge cypress/reports/*.json > cypress/reports/output.json
+          npx marge cypress/reports/output.json --reportDir cypress/reports/html
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-html-report
+          path: cypress/reports/html
+
